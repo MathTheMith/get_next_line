@@ -1,92 +1,102 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   get_next_line.c                                    :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: mvachon <mvachon@student.42lyon.fr>        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/11/20 12:02:49 by mvachon           #+#    #+#             */
-/*   Updated: 2024/11/20 14:32:14 by mvachon          ###   ########lyon.fr   */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "get_next_line.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
-
-#define BUFFER_SIZE 100
-
-char *get_next_line(int fd)
+char	*ft_join_and_free(char *text, char *buffer)
 {
-    char buf[BUFFER_SIZE + 1];
-    char *result = NULL;
-    char *temp = NULL;
-    int nb_read;
-    size_t total_length = 0;
+	char	*temp;
 
-    if (fd < 0)
-        return (NULL);
-
-    while ((nb_read = read(fd, buf, BUFFER_SIZE)) > 0)
-    {
-        buf[nb_read] = '\0';
-        size_t stop_index = 0;
-        while (stop_index < (size_t)nb_read && buf[stop_index] != '\n')
-            stop_index++;
-
-        total_length += stop_index;
-        temp = result;
-        result = malloc(total_length + 1);
-        if (!result)
-            return (NULL);
-
-        if (temp)
-        {
-            size_t i = 0;
-            while (i < total_length - stop_index)
-            {
-                result[i] = temp[i];
-                i++;
-            }
-            free(temp);
-        }
-
-        size_t j = 0;
-        while (j < stop_index)
-        {
-            result[total_length - stop_index + j] = buf[j];
-            j++;
-        }
-
-        if (stop_index < (size_t)nb_read)
-            break;
-    }
-
-    if (nb_read < 0)
-    {
-        free(result);
-        return (NULL);
-    }
-
-    if (result)
-        result[total_length] = '\0';
-    return result;
+	temp = ft_strjoin(text, buffer);
+	free(text); 
+	return (temp);
 }
 
-int main(void)
+char	*read_first_line(int fd, char *text)
 {
-    int fd = open("doc.txt", O_RDONLY);
-    if (fd < 0)
-        return (1);
-    char *content = get_next_line(fd);
-    if (content)
-    {
-        printf("%s", content);
-        free(content);
-    }
-    close(fd);
-    return (0);
+	char	*buffer;
+	int		bytes_read;
+
+	if (!text)
+		text = ft_calloc(1, 1);
+	buffer = malloc((BUFFER_SIZE + 1) * sizeof(char));
+	if (!buffer)
+		return (NULL);
+	bytes_read = 1;
+	while (bytes_read > 0)
+	{
+		bytes_read = read(fd, buffer, BUFFER_SIZE);
+		if (bytes_read == -1)
+		{
+			free(text);
+			free(buffer);
+			return (NULL);
+		}
+		buffer[bytes_read] = 0;
+		text = ft_join_and_free(text, buffer);
+		if (ft_strchr(text, '\n'))
+			break;
+	}
+	free(buffer);.
+	return (text);
+}
+
+char	*get_line(char *text)
+{
+	int		i;
+	char	*str;
+
+	i = 0;
+	if (!text[i])
+		return (NULL);
+	while (text[i] && text[i] != '\n')
+		i++;
+	str = ft_calloc(i + 2, sizeof(char));
+	if (!str)
+		return (NULL);
+	i = 0;
+	while (text[i] && text[i] != '\n')
+	{
+		str[i] = text[i];
+		i++;
+	}
+	if (text[i] == '\n')
+		str[i++] = '\n';
+	return (str);
+}
+
+char	*clean_first_line(char *text)
+{
+	int		i;
+	int		j;
+	char	*str;
+
+	i = 0;
+	j = 0;
+	while (text[i] && text[i] != '\n')
+	if (!text[i])
+	{
+		free(text);
+		return (NULL);
+	}
+	str = ft_calloc((ft_strlen(text) - i + 1), sizeof(*text));
+	if (!str)
+		return (NULL);
+	while (text[++i])
+		str[j++] = text[i];
+	str[j] = '\0';
+	free(text);
+	return (str);
+}
+
+char	*get_next_line(int fd)
+{
+	char		*output_text;
+	static char	*text;
+
+	if (fd < 0 || BUFFER_SIZE <= 0)
+		return (NULL);
+	text = read_first_line(fd, text); 
+	if (!text) 
+		return (NULL);
+	output_text = get_line(text);
+	text = clean_first_line(text);
+	return (output_text);
 }
