@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   get_next_line.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: math <math@student.42lyon.fr>              +#+  +:+       +#+        */
+/*   By: mvachon <mvachon@student.42lyon.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/26 10:35:04 by math              #+#    #+#             */
-/*   Updated: 2024/11/26 11:27:53 by math             ###   ########lyon.fr   */
+/*   Updated: 2024/12/01 14:59:30 by mvachon          ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 void	ft_free_ptr(char **ptr)
 {
-	if (ptr != NULL && *ptr != NULL)
+	if (ptr && *ptr)
 	{
 		free(*ptr);
 		*ptr = NULL;
@@ -67,9 +67,9 @@ char	*read_first_line(int fd, char *text)
 			return (NULL);
 		}
 		if (ft_strchr(text, '\n'))
-			break ;
+			break;
 		if (bytes_read == 0)
-			break ;
+			break;
 	}
 	ft_free_ptr(&buffer);
 	return (text);
@@ -87,11 +87,9 @@ char	*ft_get_line(char *text)
 		i++;
 	if (text[i] == '\n')
 		i++;
-
 	str = ft_calloc(i + 1, 1);
 	if (!str)
 		return (NULL);
-	
 	memcpy(str, text, i);
 	return (str);
 }
@@ -120,11 +118,9 @@ char	*clean_first_line(char *text)
 		ft_free_ptr(&text);
 		return (NULL);
 	}
-
 	j = 0;
 	while (text[i])
 		str[j++] = text[i++];
-	
 	ft_free_ptr(&text);
 	return (str);
 }
@@ -135,20 +131,34 @@ char	*get_next_line(int fd)
 	static char	*text[1024];
 
 	if (fd < 0 || BUFFER_SIZE <= 0 || fd >= 1024)
-	{
-		if (fd >= 0 && fd < 1024)
-			ft_free_ptr(&text[fd]);
 		return (NULL);
-	}
 
 	text[fd] = read_first_line(fd, text[fd]);
 	if (!text[fd])
+		return (NULL);
+
+	line = ft_get_line(text[fd]);
+	if (!line)
 	{
 		ft_free_ptr(&text[fd]);
 		return (NULL);
 	}
 
-	line = ft_get_line(text[fd]);
 	text[fd] = clean_first_line(text[fd]);
 	return (line);
 }
+
+// #include <fcntl.h>
+// #include <stdio.h>
+// #include "get_next_line.h"
+
+// int main(void)
+// {
+//     int fd;
+
+	
+//     fd = open("doc.txt", O_RDONLY);
+
+//     printf("%s", get_next_line(fd));
+// 	printf("%s", get_next_line(fd));
+// }
