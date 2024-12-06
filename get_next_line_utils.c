@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   get_next_line_utils.c                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mvachon <mvachon@student.42lyon.fr>        +#+  +:+       +#+        */
+/*   By: math <math@student.42lyon.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/11/26 10:35:04 by math              #+#    #+#             */
-/*   Updated: 2024/12/01 14:45:43 by mvachon          ###   ########lyon.fr   */
+/*   Created: 2024/12/06 17:46:05 by math              #+#    #+#             */
+/*   Updated: 2024/12/06 18:09:28 by math             ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,8 @@ size_t	ft_strlen(const char *s)
 	size_t	i;
 
 	i = 0;
+	if (!s)
+		return (0);
 	while (s[i])
 		i++;
 	return (i);
@@ -24,66 +26,79 @@ size_t	ft_strlen(const char *s)
 
 char	*ft_strchr(const char *s, int c)
 {
-	char	*str;
+	int	i;
 
-	str = (char *)s;
-	while (*str)
+	i = 0;
+	if (!s)
+		return (NULL);
+	while (s[i])
 	{
-		if (*str == (char)c)
-			return (str);
-		str++;
+		if (s[i] == (char)c)
+			return ((char *)&s[i]);
+		i++;
 	}
-	if (c == 0)
-		return (str);
 	return (NULL);
 }
 
-char	*ft_strjoin(char const *s1, char const *s2)
+char	*ft_strjoin(char *s1, char *s2)
 {
 	char	*str;
-	size_t	len1;
-	size_t	len2;
 	size_t	i;
 	size_t	j;
 
-	if (!s1 || !s2)
-		return (NULL);
-	len1 = ft_strlen(s1);
-	len2 = ft_strlen(s2);
-	str = malloc(sizeof(char) * (len1 + len2 + 1));
+	if (!s1)
+	{
+		s1 = malloc(1);
+		s1[0] = '\0';
+	}
+	if (!s2)
+		return (s1);
+	str = malloc(ft_strlen(s1) + ft_strlen(s2) + 1);
 	if (!str)
 		return (NULL);
-	i = 0;
-	while (i < len1)
-	{
-		str[i] = s1[i];
-		i++;
-	}
+	i = -1;
 	j = 0;
-	while (j < len2)
-	{
-		str[i + j] = s2[j];
-		j++;
-	}
-	str[i + j] = '\0';
+	while (s1[++i])
+		str[i] = s1[i];
+	while (s2[j])
+		str[i++] = s2[j++];
+	str[i] = '\0';
+	free(s1);
 	return (str);
 }
 
-void	*ft_calloc(size_t count, size_t size)
+char	*ft_substr(char const *s, unsigned int start, size_t len)
 {
-	char	*ptr;
-	size_t	total_size;
+	char	*substr;
 	size_t	i;
+	size_t	s_len;
 
-	total_size = count * size;
-	ptr = malloc(total_size);
-	if (!ptr)
+	if (!s)
+		return (NULL);
+	s_len = ft_strlen(s);
+	if (start >= s_len)
+		len = 0;
+	else if (len > s_len - start)
+		len = s_len - start;
+	substr = malloc(len + 1);
+	if (!substr)
 		return (NULL);
 	i = 0;
-	while (i < total_size)
+	while (i < len)
 	{
-		ptr[i] = 0;
+		substr[i] = s[start + i];
 		i++;
 	}
-	return (ptr);
+	substr[i] = '\0';
+	return (substr);
+}
+
+char	*free_ptr(void **ptr)
+{
+	if (ptr && *ptr)
+	{
+		free(*ptr);
+		*ptr = NULL;
+	}
+	return (NULL);
 }

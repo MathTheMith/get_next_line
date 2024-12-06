@@ -3,162 +3,120 @@
 /*                                                        :::      ::::::::   */
 /*   get_next_line.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mvachon <mvachon@student.42lyon.fr>        +#+  +:+       +#+        */
+/*   By: math <math@student.42lyon.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/11/26 10:35:04 by math              #+#    #+#             */
-/*   Updated: 2024/12/01 14:59:30 by mvachon          ###   ########lyon.fr   */
+/*   Created: 2024/12/06 17:59:09 by math              #+#    #+#             */
+/*   Updated: 2024/12/06 18:26:16 by math             ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-void	ft_free_ptr(char **ptr)
+char	*free_and_return_null(char **ptr1, char **ptr2)
 {
-	if (ptr && *ptr)
-	{
-		free(*ptr);
-		*ptr = NULL;
-	}
+	free_ptr((void **)ptr1);
+	free_ptr((void **)ptr2);
+	return (NULL);
 }
 
-char	*ft_join_and_free(char *text, char *buffer)
-{
-	char	*temp;
-
-	if (!text || !buffer)
-		return (NULL);
-	temp = ft_strjoin(text, buffer);
-	ft_free_ptr(&text);
-	return (temp);
-}
-
-char	*read_first_line(int fd, char *text)
+char	*safe_read(int fd, char *storage)
 {
 	char	*buffer;
 	int		bytes_read;
 
-	if (!text)
-		text = ft_calloc(1, 1);
-	if (!text)
-		return (NULL);
-
-	buffer = malloc((BUFFER_SIZE + 1) * sizeof(char));
+	buffer = malloc(BUFFER_SIZE + 1);
 	if (!buffer)
-	{
-		ft_free_ptr(&text);
 		return (NULL);
-	}
-
-	bytes_read = 1;
-	while (bytes_read > 0)
+	while (1)
 	{
 		bytes_read = read(fd, buffer, BUFFER_SIZE);
 		if (bytes_read == -1)
-		{
-			ft_free_ptr(&text);
-			ft_free_ptr(&buffer);
-			return (NULL);
-		}
-		buffer[bytes_read] = '\0';
-		text = ft_join_and_free(text, buffer);
-		if (!text)
-		{
-			ft_free_ptr(&buffer);
-			return (NULL);
-		}
-		if (ft_strchr(text, '\n'))
-			break;
+			return (free_and_return_null(&buffer, &storage));
 		if (bytes_read == 0)
-			break;
+			break ;
+		buffer[bytes_read] = '\0';
+		storage = ft_strjoin(storage, buffer);
+		if (!storage)
+			return (free_ptr((void **)&buffer));
+		if (ft_strchr(storage, '\n'))
+			break ;
 	}
-	ft_free_ptr(&buffer);
-	return (text);
+	free_ptr((void **)&buffer);
+	return (storage);
 }
 
-char	*ft_get_line(char *text)
+static char	*extract_line(char *storage)
 {
+	char	*line;
 	int		i;
-	char	*str;
 
+	if (!storage || !storage[0])
+		return (NULL);
 	i = 0;
-	if (!text || !text[i])
-		return (NULL);
-	while (text[i] && text[i] != '\n')
+	while (storage[i] && storage[i] != '\n')
 		i++;
-	if (text[i] == '\n')
-		i++;
-	str = ft_calloc(i + 1, 1);
-	if (!str)
-		return (NULL);
-	memcpy(str, text, i);
-	return (str);
+	line = ft_substr(storage, 0, i + 1);
+	return (line);
 }
 
-char	*clean_first_line(char *text)
+static char	*update_storage(char *storage)
 {
+	char	*new_storage;
 	int		i;
-	int		j;
-	char	*str;
 
-	if (!text)
+	if (!storage)
 		return (NULL);
 	i = 0;
-	while (text[i] && text[i] != '\n')
+	while (storage[i] && storage[i] != '\n')
 		i++;
-	if (text[i] == '\n')
-		i++;
-	if (!text[i])
-	{
-		ft_free_ptr(&text);
-		return (NULL);
-	}
-	str = ft_calloc(ft_strlen(text) - i + 1, 1);
-	if (!str)
-	{
-		ft_free_ptr(&text);
-		return (NULL);
-	}
-	j = 0;
-	while (text[i])
-		str[j++] = text[i++];
-	ft_free_ptr(&text);
-	return (str);
+	if (!storage[i])
+		return (free_ptr((void **)&storage));
+	new_storage = ft_substr(storage, i + 1, ft_strlen(storage) - i);
+	free_ptr((void **)&storage);
+	return (new_storage);
 }
 
 char	*get_next_line(int fd)
 {
+	static char	*storage;
 	char		*line;
-	static char	*text[1024];
 
-	if (fd < 0 || BUFFER_SIZE <= 0 || fd >= 1024)
+	if (fd < 0 || BUFFER_SIZE <= 0)
 		return (NULL);
-
-	text[fd] = read_first_line(fd, text[fd]);
-	if (!text[fd])
+	storage = safe_read(fd, storage);
+	if (!storage)
 		return (NULL);
-
-	line = ft_get_line(text[fd]);
-	if (!line)
-	{
-		ft_free_ptr(&text[fd]);
-		return (NULL);
-	}
-
-	text[fd] = clean_first_line(text[fd]);
+	line = extract_line(storage);
+	storage = update_storage(storage);
 	return (line);
 }
 
-// #include <fcntl.h>
-// #include <stdio.h>
-// #include "get_next_line.h"
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-// int main(void)
-// {
-//     int fd;
+int main(int argc, char **argv)
+{
+    int     fd;
+    char    *line;
 
-	
-//     fd = open("doc.txt", O_RDONLY);
+    if (argc < 2)
+    {
+        printf("Usage: %s <filename>\n", argv[0]);
+        return (EXIT_FAILURE);
+    }
+    fd = open(argv[1], O_RDONLY);
+    if (fd == -1)
+    {
+        perror("Error opening file");
+        return (EXIT_FAILURE);
+    }
+    while ((line = get_next_line(fd)) != NULL)
+    {
+        printf("%s", line);
+        free(line);
+    }
+    close(fd);
 
-//     printf("%s", get_next_line(fd));
-// 	printf("%s", get_next_line(fd));
-// }
+    return (EXIT_SUCCESS);
+}
